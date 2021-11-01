@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require 'octokit'
 require 'filecache'
 def cache
-  @_cache = FileCache.new("replacer-cache", "/tmp/replacer-cache", 1800, 3)
+  @_cache = FileCache.new('replacer-cache', '/tmp/replacer-cache', 1800, 3)
 end
 
 def client
@@ -14,7 +16,7 @@ def client
 end
 
 def repos
-  cache.get_or_set("repos") do
+  cache.get_or_set('repos') do
     client.organizations.map do |o|
       client.organization_repositories(o[:login]).map do |repo|
         repo[:full_name]
