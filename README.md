@@ -25,16 +25,21 @@ update-container-image-name:
   replace: "container: example2"
 ```
 - config name(cf. update-container-image-name)
+
 your config name.
 
 - repo_pattern
+
 filter repository by regexp.
 
 - file_pattern
+
 filter flle by regexp.
 
 - content_pattern
+
 search content in some file by regexp.
 
 - replace
+
 replace content from matching content pattern.
