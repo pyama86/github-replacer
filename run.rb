@@ -22,6 +22,7 @@ YAML.load_file(ENV['COFIG_PATH'] || './config.yml').each do |name, rc|
   end
   c = OpenStruct.new(rc)
   targets = repos.select { |r| r =~ /#{c.repo_pattern}/ }
+
   next unless targets
 
   targets.each do |repo_name|
@@ -102,6 +103,16 @@ YAML.load_file(ENV['COFIG_PATH'] || './config.yml').each do |name, rc|
       client.create_pull_request(repo_name, default_branch, branch_name,
                                    pr_title, pr_body)
     rescue StandardError => e
+      begin
+        if client.rate_limit.remaining / client.rate_limit.limit < 0.1
+          sleep client.rate_limit.resets_in
+          retry
+        end
+      rescue => e
+        logger.warn "maybe rate limit is not enabled. #{e.inspect}"
+        next
+      end
+
       logger.error e.inspect
       next
     end

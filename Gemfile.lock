@@ -17,6 +17,8 @@ GEM
     faraday-em_http (1.0.0)
     faraday-em_synchrony (1.0.0)
     faraday-excon (1.1.0)
+    faraday-http-cache (2.2.0)
+      faraday (>= 0.8)
     faraday-httpclient (1.0.1)
     faraday-net_http (1.0.1)
     faraday-net_http_persistent (1.2.0)
@@ -37,6 +39,7 @@ PLATFORMS
   x86_64-darwin-20
 
 DEPENDENCIES
+  faraday-http-cache
   filecache
   octokit (~> 4.0)
 
