@@ -10,7 +10,7 @@ you can define replace rule with regexp.
 ## Usage
 
 ```bash
-$ docker run -e GITHUB_TOKEN=$GITHUB_TOKEN -v config.yml:/opt/config.yml pyama/github-replacer
+$ docker run -e GITHUB_TOKEN=$GITHUB_TOKEN -e CONFIG_PATH=/tmp/config.yml -v `pwd`/config.yml:/tmp/config.yml pyama/github-replacer
 ```
 
 ## Config

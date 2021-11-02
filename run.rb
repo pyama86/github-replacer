@@ -15,7 +15,7 @@ cols = %w[
   replace
 ]
 
-YAML.load_file(ENV['COFIG_PATH'] || './config.yml').each do |name, rc|
+YAML.load_file(ENV['CONFIG_PATH'] || './config.yml').each do |name, rc|
   unless rc.keys == cols
     logger.warn("#{name} is not filled all parameter keys")
     next
