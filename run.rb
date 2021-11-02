@@ -103,6 +103,7 @@ YAML.load_file(ENV['CONFIG_PATH'] || './config.yml').each do |name, rc|
       client.create_pull_request(repo_name, default_branch, branch_name,
                                    pr_title, pr_body)
     rescue StandardError => e
+      logger.error e.inspect
       begin
         if client.rate_limit.remaining / client.rate_limit.limit < 0.1
           sleep client.rate_limit.resets_in
@@ -110,10 +111,7 @@ YAML.load_file(ENV['CONFIG_PATH'] || './config.yml').each do |name, rc|
         end
       rescue => e
         logger.warn "maybe rate limit is not enabled. #{e.inspect}"
-        next
       end
-
-      logger.error e.inspect
       next
     end
   end
