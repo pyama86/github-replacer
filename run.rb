@@ -4,6 +4,7 @@ require 'base64'
 require 'digest/sha1'
 require 'yaml'
 require 'ostruct'
+require 'parallel'
 require 'logger'
 require './lib/funcs'
 logger = Logger.new($stdout)
@@ -23,18 +24,23 @@ def config
   end.to_h
 end
 
-repos.each do |repo_name|
+def pr_title(name)
+  "Replace by #{name}(github-replacer)"
+end
+
+def branch_name(name)
+  "replacer-update-#{name}"
+end
+
+Parallel.each(repos) do |repo_name|
   logger.info "repo:#{repo_name} start processing"
 
   # PRが存在していない設定だけを取得
   has_not_pr_config = config.select { |_name, rc| repo_name =~ /#{rc['repo_pattern']}/ }.select do |name, _rc|
-    pr_title = "Replace by #{name}(github-replacer)"
-    branch_name = "replacer-update-#{name}"
-
     begin
-      b = client.ref(repo_name, "heads/#{branch_name}")
-      if b && client.pull_requests(repo_name).none? { |pr| pr[:title] == pr_title }
-        client.delete_branch(repo_name, branch_name)
+      b = client.ref(repo_name, "heads/#{branch_name(name)}")
+      if b && client.pull_requests(repo_name).none? { |pr| pr[:title] == pr_title(name) }
+        client.delete_branch(repo_name, branch_name(name))
         return true
       else
         logger.info "rule:#{name} repo:#{repo_name} already create pull request"
@@ -51,13 +57,14 @@ repos.each do |repo_name|
   logger.info "repo:#{repo_name} has match rules"
 
   default_branch = client.repo(repo_name).default_branch
+
   results = {}
   # リポジトリのファイルをすべてのルール処理する
-  client.tree(
+  Parallel.each(client.tree(
     repo_name,
     default_branch,
     recursive: true
-  )[:tree].select { |obj| obj[:type] == 'blob' }.each do |obj|
+  )[:tree].select { |obj| obj[:type] == 'blob' }, in_threads: 4) do |obj|
     before_content = nil
     has_not_pr_config.each do |name, rc|
       c = OpenStruct.new(rc)
@@ -78,12 +85,11 @@ repos.each do |repo_name|
 
   # ブランチの作成
   results.each do |name, update_results|
-    branch_name = "replacer-update-#{name}"
     begin
       unless ENV['DRY_RUN']
         client.create_ref(
           repo_name,
-          "refs/heads/#{branch_name}",
+          "refs/heads/#{branch_name(name)}",
           client.ref(repo_name, "heads/#{default_branch}").object.sha
         )
       end
@@ -102,7 +108,7 @@ repos.each do |repo_name|
                              "replace #{name} - #{r[:file_info][:path]}",
                              r[:file_info][:sha],
                              r[:after],
-                             branch: branch_name)
+                             branch: branch_name(name))
     end
 
     c = OpenStruct.new(config[name])
@@ -118,8 +124,8 @@ repos.each do |repo_name|
 
     logger.info "repo:#{repo_name} create pull request"
     unless ENV['DRY_RUN']
-      client.create_pull_request(repo_name, default_branch, branch_name,
-                                 pr_title, pr_body)
+      client.create_pull_request(repo_name, default_branch, branch_name(name),
+                                 pr_title(name), pr_body)
     end
   end
 rescue StandardError => e

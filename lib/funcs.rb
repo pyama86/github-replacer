@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'octokit'
+require 'parallel'
 require 'filecache'
 require 'faraday-http-cache'
 def cache
@@ -26,5 +27,5 @@ def client
 end
 
 def repos
-  @_repos ||= cache.get_or_set('repos'){ client.repositories.map(&:full_name).uniq }
+  @_repos ||= cache.get_or_set('repos') { Parallel.map(client.repositories) { |r| r.full_name }.uniq }
 end
