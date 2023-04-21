@@ -60,11 +60,11 @@ Parallel.each(repos) do |repo_name|
 
   results = {}
   # リポジトリのファイルをすべてのルール処理する
-  Parallel.each(client.tree(
+  client.tree(
     repo_name,
     default_branch,
     recursive: true
-  )[:tree].select { |obj| obj[:type] == 'blob' }, in_threads: 4) do |obj|
+  )[:tree].select { |obj| obj[:type] == 'blob' }.each do |obj|
     before_content = nil
     has_not_pr_config.each do |name, rc|
       c = OpenStruct.new(rc)
