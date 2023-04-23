@@ -32,7 +32,7 @@ def branch_name(name)
   "replacer-update-#{name}"
 end
 
-Parallel.each(repos, in_threads: 2) do |repo_name|
+Parallel.each(repos, in_threads: 4) do |repo_name|
   logger.info "repo:#{repo_name} start processing"
 
   # PRが存在していない設定だけを取得
