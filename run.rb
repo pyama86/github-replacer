@@ -36,10 +36,12 @@ Parallel.each(repos, in_threads: 4) do |repo_name|
   logger.info "repo:#{repo_name} start processing"
 
   # PRが存在していない設定だけを取得
+  pull_requests = client.pull_requests(repo_name)
+  refs = client.refs(repo_name)
   has_not_pr_config = config.select { |_name, rc| repo_name =~ /#{rc['repo_pattern']}/ }.select do |name, _rc|
     begin
-      b = client.ref(repo_name, "heads/#{branch_name(name)}")
-      if b && client.pull_requests(repo_name).none? { |pr| pr[:title] == pr_title(name) }
+      b = refs.find { |r| r[:ref] == "refs/heads/#{branch_name(name)}" }
+      if b && pull_requests.none? { |pr| pr[:title] == pr_title(name) }
         client.delete_branch(repo_name, branch_name(name))
         return true
       else
@@ -60,11 +62,11 @@ Parallel.each(repos, in_threads: 4) do |repo_name|
 
   results = {}
   # リポジトリのファイルをすべてのルール処理する
-  client.tree(
+  Parallel.each(client.tree(
     repo_name,
     default_branch,
     recursive: true
-  )[:tree].select { |obj| obj[:type] == 'blob' }.each do |obj|
+  )[:tree].select { |obj| obj[:type] == 'blob' }, in_threads: 4) do |obj|
     before_content = nil
     has_not_pr_config.each do |name, rc|
       c = OpenStruct.new(rc)
