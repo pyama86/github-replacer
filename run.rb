@@ -40,13 +40,14 @@ Parallel.each(repos, in_threads: 4) do |repo_name|
   refs = client.refs(repo_name)
   has_not_pr_config = config.select { |_name, rc| repo_name =~ /#{rc['repo_pattern']}/ }.select do |name, _rc|
     begin
-      b = refs.find { |r| r[:ref] == "refs/heads/#{branch_name(name)}" }
-      if b && pull_requests.none? { |pr| pr[:title] == pr_title(name) }
-        client.delete_branch(repo_name, branch_name(name))
-        return true
-      else
-        logger.info "rule:#{name} repo:#{repo_name} already create pull request"
-        next
+      if refs.find { |r| r[:ref] == "refs/heads/#{branch_name(name)}" }
+        if pull_requests.none? { |pr| pr[:title] == pr_title(name) }
+          client.delete_branch(repo_name, branch_name(name))
+          return true
+        else
+          logger.info "rule:#{name} repo:#{repo_name} already create pull request"
+          next
+        end
       end
     rescue Octokit::NotFound
     rescue StandardError => e
